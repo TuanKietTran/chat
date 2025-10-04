@@ -1,4 +1,3 @@
-// plugins/expo-file-manager/utils.ts
 import { Camera } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 
@@ -6,22 +5,29 @@ import * as MediaLibrary from 'expo-media-library';
 export type PermissionType = 'CAMERA' | 'MEDIA_LIBRARY';
 
 export async function checkPermissions(permissionTypes: PermissionType[]): Promise<boolean> {
-  try {
+    const errors: string[] = [];
+
     for (const permission of permissionTypes) {
-      if (permission === 'CAMERA') {
-        const { status } = await Camera.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-          throw new Error('Camera permission denied');
+        try {
+            if (permission === 'CAMERA') {
+                const { status } = await Camera.requestCameraPermissionsAsync();
+                if (status !== 'granted') {
+                    errors.push('Camera permission denied');
+                }
+            } else if (permission === 'MEDIA_LIBRARY') {
+                const { status } = await MediaLibrary.requestPermissionsAsync();
+                if (status !== 'granted') {
+                    errors.push('Media Library permission denied');
+                }
+            }
+        } catch (error) {
+            errors.push(`Failed to check ${permission} permission: ${(error as Error).message}`);
         }
-      } else if (permission === 'MEDIA_LIBRARY') {
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== 'granted') {
-          throw new Error('Media Library permission denied');
-        }
-      }
     }
+
+    if (errors.length > 0) {
+        throw new Error(`Permission check failed: ${errors.join('; ')}`);
+    }
+
     return true;
-  } catch (error) {
-    throw new Error(`Permission check failed: ${(error as Error).message}`);
-  }
 }
